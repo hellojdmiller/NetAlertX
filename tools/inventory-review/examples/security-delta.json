@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "scope": "Fictional lab \u2014 demonstration data",
+  "before_at": "2026-09-17T12:00:00Z",
+  "after_at": "2026-09-18T12:00:00Z",
+  "baseline_findings": 6,
+  "current_findings": 6,
+  "counts": {
+    "regression": 1,
+    "inconclusive": 1,
+    "not_observed": 1,
+    "persistent_failure": 1,
+    "new_failure": 1,
+    "verified_fix": 1,
+    "observed_pass": 1
+  },
+  "findings": [
+    {
+      "change": "regression",
+      "previous_status": "PASS",
+      "current_status": "FAIL",
+      "finding": {
+        "PROVIDER": "aws",
+        "ACCOUNT_UID": "demo-account",
+        "CHECK_ID": "demo_access_check",
+        "RESOURCE_UID": "demo-storage-b",
+        "REGION": "us-west-2",
+        "STATUS": "FAIL",
+        "SEVERITY": "critical",
+        "MUTED": "False",
+        "REMEDIATION_RECOMMENDATION_TEXT": "Review the documented access policy and validate the change."
+      }
+    },
+    {
+      "change": "inconclusive",
+      "previous_status": "FAIL",
+      "current_status": "MANUAL",
+      "finding": {
+        "PROVIDER": "aws",
+        "ACCOUNT_UID": "demo-account",
+        "CHECK_ID": "demo_access_check",
+        "RESOURCE_UID": "demo-storage-e",
+        "REGION": "us-west-2",
+        "STATUS": "MANUAL",
+        "SEVERITY": "high",
+        "MUTED": "False",
+        "REMEDIATION_RECOMMENDATION_TEXT": "Review the documented access policy and validate the change."
+      }
+    },
+    {
+      "change": "not_observed",
+      "previous_status": "FAIL",
+      "current_status": null,
+      "finding": {
+        "PROVIDER": "aws",
+        "ACCOUNT_UID": "demo-account",
+        "CHECK_ID": "demo_access_check",
+        "RESOURCE_UID": "demo-storage-d",
+        "REGION": "us-west-2",
+        "STATUS": "FAIL",
+        "SEVERITY": "high",
+        "MUTED": "False",
+        "REMEDIATION_RECOMMENDATION_TEXT": "Review the documented access policy and validate the change."
+      }
+    },
+    {
+      "change": "persistent_failure",
+      "previous_status": "FAIL",
+      "current_status": "FAIL",
+      "finding": {
+        "PROVIDER": "aws",
+        "ACCOUNT_UID": "demo-account",
+        "CHECK_ID": "demo_access_check",
+        "RESOURCE_UID": "demo-storage-c",
+        "REGION": "us-west-2",
+        "STATUS": "FAIL",
+        "SEVERITY": "high",
+        "MUTED": "True",
+        "REMEDIATION_RECOMMENDATION_TEXT": "Review the documented access policy and validate the change."
+      }
+    },
+    {
+      "change": "new_failure",
+      "previous_status": null,
+      "current_status": "FAIL",
+      "finding": {
+        "PROVIDER": "aws",
+        "ACCOUNT_UID": "demo-account",
+        "CHECK_ID": "demo_access_check",
+        "RESOURCE_UID": "demo-storage-f",
+        "REGION": "us-west-2",
+        "STATUS": "FAIL",
+        "SEVERITY": "medium",
+        "MUTED": "False",
+        "REMEDIATION_RECOMMENDATION_TEXT": "Review the documented access policy and validate the change."
+      }
+    },
+    {
+      "change": "verified_fix",
+      "previous_status": "FAIL",
+      "current_status": "PASS",
+      "finding": {
+        "PROVIDER": "aws",
+        "ACCOUNT_UID": "demo-account",
+        "CHECK_ID": "demo_access_check",
+        "RESOURCE_UID": "demo-storage-a",
+        "REGION": "us-west-2",
+        "STATUS": "PASS",
+        "SEVERITY": "high",
+        "MUTED": "False",
+        "REMEDIATION_RECOMMENDATION_TEXT": "Review the documented access policy and validate the change."
+      }
+    },
+    {
+      "change": "observed_pass",
+      "previous_status": "PASS",
+      "current_status": "PASS",
+      "finding": {
+        "PROVIDER": "aws",
+        "ACCOUNT_UID": "demo-account",
+        "CHECK_ID": "demo_access_check",
+        "RESOURCE_UID": "demo-storage-g",
+        "REGION": "us-west-2",
+        "STATUS": "PASS",
+        "SEVERITY": "low",
+        "MUTED": "False",
+        "REMEDIATION_RECOMMENDATION_TEXT": "Review the documented access policy and validate the change."
+      }
+    }
+  ]
+}

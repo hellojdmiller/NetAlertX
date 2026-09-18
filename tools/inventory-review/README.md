@@ -1,6 +1,6 @@
 # Network review desk
 
-A local workspace for reviewing NetAlertX inventory changes, opening cited evidence, and preparing editable ticket drafts. Optional Ollama summaries stay marked as drafts and must cite supplied records. This is a standalone extension in JD Miller's fork.
+A local workspace for reviewing NetAlertX inventory changes and Prowler security findings, opening cited evidence, and preparing editable ticket drafts. Optional Ollama summaries stay marked as drafts and must cite supplied records. This is a standalone extension in JD Miller's fork.
 
 ## Open the review desk
 
@@ -10,7 +10,7 @@ From the repository root, with Python 3.10 or newer:
 python3 tools/inventory-review/review_desk.py --demo
 ```
 
-Open **http://127.0.0.1:8770/**. The fictional demo contains a new device, an owner gap, an IP change, an unobserved device, and an unchanged gateway. Stop the local server with Ctrl+C. No packages are required. Use `--port 8775` if the default port is occupied.
+Open **http://127.0.0.1:8770/**. The fictional demo includes Inventory and Security views. Inventory contains new devices, owner gaps, an IP change, an unobserved device, and an unchanged gateway. Security contains failing, passing, manual, and unobserved Prowler findings. Stop the local server with Ctrl+C. No packages are required. Use `--port 8775` if the default port is occupied.
 
 1. Select a review category or search the device queue.
 2. Open an evidence reference to see its before/after values.
@@ -27,7 +27,19 @@ Generate a `.json` comparison with the command below, then use **Import report**
 python3 tools/inventory-review/review_desk.py --report /path/to/inventory-review.json
 ```
 
-The desk accepts version 1 **inventory-review JSON**, not raw device exports. Reports must be smaller than 8 MB and contain at most 25,000 device records. Invalid or conflicting reports fail visibly and leave the displayed report intact. Imports remain in this browser session; reloading returns to the report used to start the server. Saved drafts remain associated with their original report.
+The desk accepts version 1 **inventory-review JSON** or **Prowler Security Delta JSON**, not raw device or scan exports. Importing opens the matching Inventory or Security view; one report of each type stays available until reload. Evidence and drafts remain isolated by report. A security resource is not automatically matched to a network device. Reports must be smaller than 8 MB and contain at most 25,000 device records. Invalid or conflicting reports fail visibly and leave the displayed report intact. Imports remain in this browser session; reloading returns to the report used to start the server. Saved drafts remain associated with their original report.
+
+## Collect directly from NetAlertX
+
+Use the new [snapshot collector](SNAPSHOT-COLLECTION.md) to collect two native snapshots, then compare them. It reads the authenticated API, follows pagination through an empty terminal page, and cross-checks two traversals against a full export and active/archived totals. A complete result records the source, scope, UTC collection times and integrity hashes.
+
+The desk shows **Collection evidence** for validated collector comparisons. Changing report content without updating its recorded binding fails visibly. These are collector-recorded checks, not an independent attestation: scan freshness remains unverified and database atomicity is not guaranteed. A fictional recorded comparison is included at `examples/collected-review.json`; its label explicitly identifies a local HTTP fixture.
+
+## Review Prowler findings
+
+Generate Security Delta JSON in [JD Miller's Prowler fork](https://github.com/hellojdmiller/prowler/tree/feature/security-delta/contrib/security-delta), then import it here. The same report and evidence IDs work in the Prowler Markdown packet and the desk. Select **Security** to revisit it, or try the bundled security demo.
+
+The source adapter is vendored with its Apache license and [attribution](adapters/NOTICE.md). Security cells retain exact check transitions and finding identity. Missing results are unresolved; FAIL → PASS means the matching check now passes, not that full remediation is verified. Historical severity and mute fields are not reconstructed from current values. Drafts can be edited and downloaded using the same workflow as inventory records.
 
 ## Portable preview
 
@@ -35,7 +47,7 @@ The desk accepts version 1 **inventory-review JSON**, not raw device exports. Re
 python3 tools/inventory-review/review_desk.py --demo --export /tmp/network-review-desk.html
 ```
 
-The resulting single HTML file contains its styles, scripts, and fictional report. It supports search, evidence navigation, draft editing, and downloads without a server. Browser storage for a directly opened file varies by browser, so download drafts you want to keep. Importing another report and connecting Ollama require the local server. Replace `--demo` with `--report /path/to/inventory-review.json` to export your own comparison. The generated file includes that report's device data.
+The resulting single HTML file contains its styles, scripts, and both fictional report views. It supports search, evidence navigation, draft editing, and downloads without a server. Browser storage for a directly opened file varies by browser, so download drafts you want to keep. Importing another report and connecting Ollama require the local server. Replace `--demo` with `--report /path/to/inventory-review.json` to export your own comparison. The generated file includes that report's device data.
 
 ## Optional local AI
 
@@ -79,6 +91,23 @@ The report shows:
 
 **Not observed is not proof of removal or disconnection.** The report includes historical values for missing devices. Archived devices remain in scope if present in the export. Empty exports, duplicate MACs, invalid identifiers, malformed rows, and unordered or timezone-free snapshot times fail visibly with exit code 2. Exit code 0 means a report was generated; it does not mean the network is healthy.
 
+## Check AI drafts with Promptfoo
+
+Export the same evidence packet used by the desk's model adapter:
+
+```sh
+python3 tools/inventory-review/review_desk.py \
+  --report /path/to/review.json --export-ai-evidence /tmp/evidence.json
+```
+
+After generating a local AI summary in the desk, use **Download AI draft**. In [JD Miller's Promptfoo fork](https://github.com/hellojdmiller/promptfoo/tree/feature/it-assistant-evals/examples/it-assistant-safety), run:
+
+```sh
+node examples/it-assistant-safety/check-summary.mjs /tmp/evidence.json /path/to/ai-summary.json
+```
+
+The strict extractive checker accepts exact source-backed statements and rejects unsupported claims even when citations exist. Paraphrases fail this mode; a passing fixture is not a model safety certification. The desk itself validates structure and references, not factual entailment. Evaluation is an explicit separate review step.
+
 ## Verification
 
 ```sh
@@ -86,13 +115,13 @@ python3 -m unittest discover -s tools/inventory-review -v
 node --test tools/inventory-review/desk/core.test.mjs
 ```
 
-The desk has 41 Python tests (including the original 11 comparison tests) and 8 JavaScript tests. They cover evidence validation, missing data, draft identity, malformed AI output, model filtering, local HTTP boundaries, and hostile source text. Browser checks cover report import and rejection, evidence navigation, edited draft persistence and download, phone layout, the portable preview, and AI summary rendering against a fixed-response test fixture.
+The extension has 72 Python tests (including 19 collector tests and the original comparison tests) and 10 JavaScript tests. They cover evidence validation, missing data, draft identity, malformed AI output, model filtering, local HTTP boundaries, and hostile source text. Browser checks cover both source views, Prowler and collector imports, altered provenance rejection, evidence navigation, edited draft persistence and download, source isolation, phone layout, the portable preview, and AI summary rendering against a fixed-response test fixture. Cross-repo fixture checks run both inventory and Prowler evidence through the Promptfoo checker, accepting exact source statements and rejecting fabricated approval claims.
 
 No live NetAlertX deployment or network scan was performed. No real Ollama model was run. The complete upstream application test suite was not run; this extension remains on a feature branch. The local server binds to loopback and has no multiuser authentication; it is intended for one operator on a trusted computer, not shared hosting.
 
 ## Next upgrades
 
-1. A snapshot collector that uses the authenticated API, follows pagination, and records scan scope and collection time.
+1. Validate collection against a user-provided live NetAlertX instance and independently check its scan freshness.
 2. Owner assignments from a separate reviewed registry, with confidence and evidence age shown explicitly.
 3. Evaluation of real local models against an adversarial device-name dataset, including unsupported claims with valid citations.
 4. A reviewed ticket-system adapter with explicit destination and submission controls.

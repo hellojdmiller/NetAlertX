@@ -1,9 +1,13 @@
+import { recordName, recordKey } from './report_ui.mjs';
+
 export function filterRecords(report, filter, query) {
   const term = query.trim().toLowerCase();
   return report.records.filter((record) => {
     const matches = filter === 'all' || (filter === 'attention' && record.attention) ||
-      (filter === 'ownership' && ['unassigned', 'not_exported'].includes(record.owner_status)) || record.change === filter;
-    const text = [record.evidence_id, record.label, ...Object.values(record.device)].join(' ').toLowerCase();
+      (filter === 'ownership' && ['unassigned', 'not_exported'].includes(record.owner_status)) ||
+      (filter === 'regressed' && ['new_failure', 'regression', 'newly_confirmed_failure'].includes(record.change)) ||
+      (filter === 'uncertain' && ['not_observed', 'inconclusive'].includes(record.change)) || record.change === filter;
+    const text = [record.evidence_id, record.label, ...Object.values(record.device || record.finding || {})].join(' ').toLowerCase();
     return matches && text.includes(term);
   });
 }
@@ -13,19 +17,24 @@ export function markdownText(value) {
 }
 
 export function buildDraft(report, record) {
-  const name = record.device.devName || record.device.devMac;
+  const name = recordName(record);
   const purpose = { new_device: 'new device', changed: 'device changes', not_observed: 'unobserved device',
     unchanged: 'device ownership', incomplete_comparison: 'missing evidence' }[record.change];
-  const title = `Review ${purpose}: ${name}`.replace(/[\r\n\t]+/g, ' ').slice(0, 200);
+  const title = `Review ${record.finding ? 'security finding' : purpose}: ${name}`.replace(/[\r\n\t]+/g, ' ').slice(0, 200);
   const facts = [
     `- Evidence: ${record.evidence_id}`,
     `- Report: ${report.report_id}`,
     `- Scope: ${markdownText(report.scope)}`,
     `- Baseline: ${markdownText(report.before_at)}`,
     `- Current snapshot: ${markdownText(report.after_at)}`,
-    `- Device: ${markdownText(name)} (${markdownText(record.device.devMac)})`,
+    `- ${record.finding ? 'Finding' : 'Device'}: ${markdownText(name)} (${markdownText(recordKey(record))})`,
     `- Observation: ${markdownText(record.observation)}`,
   ];
+  if (record.finding) {
+    facts.push(`- Account and check: ${markdownText(record.detail_meta)}`);
+    facts.push(`- Severity: ${markdownText(record.severity || 'not exported')}`);
+    facts.push(`- Status: ${markdownText(record.previous_status || 'not observed')} → ${markdownText(record.current_status || 'not observed')}`);
+  }
   for (const change of record.changes) {
     const label = record.cells.find((cell) => cell.field === change.field)?.label || change.field;
     facts.push(`- ${label}: ${markdownText(change.before) || '(blank)'} → ${markdownText(change.after) || '(blank)'}`);

@@ -1,4 +1,4 @@
-> **JD Miller fork:** [Network review desk](tools/inventory-review/README.md) — cited device evidence, editable ticket drafts, and optional local AI summaries. Includes a runnable fictional demo and focused tests. Upstream project documentation follows.
+> **JD Miller fork:** [Network review desk](tools/inventory-review/README.md) — inventory collection, Prowler security evidence, editable ticket drafts, and optional local AI summaries. Includes a runnable fictional demo and focused tests. Upstream project documentation follows.
 
 [![Docker Size](https://img.shields.io/docker/image-size/jokobsk/netalertx?label=Size&logo=Docker&color=0aa8d2&logoColor=fff&style=for-the-badge)](https://hub.docker.com/r/jokobsk/netalertx)
 [![Docker Pulls](https://img.shields.io/docker/pulls/jokobsk/netalertx?label=Pulls&logo=docker&color=0aa8d2&logoColor=fff&style=for-the-badge)](https://hub.docker.com/r/jokobsk/netalertx)

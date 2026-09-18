@@ -9,7 +9,8 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from desk_ai import OllamaClient
-from desk_data import prepare_report
+from desk_data import ai_evidence
+from report_adapter import canonical_source, prepare_report, public_report
 from inventory_review import compare, read_devices
 
 ROOT = Path(__file__).resolve().parent
@@ -46,47 +47,35 @@ def demo_report():
 def document(report, offline=False, is_demo=False):
     """Render the workspace with safely embedded JSON and optional bundled assets."""
     prepared = prepare_report(report)
-    canonical = {
-        key: prepared[key]
-        for key in (
-            "scope",
-            "before_at",
-            "after_at",
-            "baseline_devices",
-            "current_devices",
-        )
+    workspace = {
+        "report": public_report(prepared),
+        "source": canonical_source(prepared),
+        "demo": is_demo,
     }
-    canonical["schema_version"] = 1
-    canonical["devices"] = [
-        {
-            key: item[key]
-            for key in (
-                "change",
-                "device",
-                "owner_status",
-                "changes",
-                "uncompared_fields",
-            )
-        }
-        for item in prepared["records"]
-    ]
+    workspaces = [workspace]
+    if is_demo:
+        security = prepare_report(
+            json.loads((ROOT / "examples" / "security-delta.json").read_text())
+        )
+        workspaces.append(
+            {
+                "report": public_report(security),
+                "source": canonical_source(security),
+                "demo": True,
+            }
+        )
     initial = json.dumps(
-        {"report": prepared, "source": canonical, "demo": is_demo}, ensure_ascii=True
+        {**workspace, "workspaces": workspaces}, ensure_ascii=True
     ).replace("<", "\\u003c")
     template = (ROOT / "desk" / "index.html").read_text()
     if offline:
         style = "<style>" + (ROOT / "desk" / "desk.css").read_text() + "</style>"
-        core = (
-            (ROOT / "desk" / "core.mjs")
-            .read_text()
-            .replace("export function", "function")
-        )
-        script_code = re.sub(
-            r"\Aimport[\s\S]*?from\s+['\"]\./core\.mjs['\"];\s*",
-            "",
-            (ROOT / "desk" / "desk.mjs").read_text(),
-        )
-        script = '<script type="module">' + core + "\n" + script_code + "</script>"
+        modules = []
+        for filename in ("report_ui.mjs", "core.mjs", "desk.mjs"):
+            code = (ROOT / "desk" / filename).read_text()
+            code = re.sub(r"^import[^;]+;\s*", "", code, flags=re.MULTILINE)
+            modules.append(code.replace("export function", "function"))
+        script = '<script type="module">' + "\n".join(modules) + "</script>"
     else:
         style = '<link rel="stylesheet" href="/desk.css">'
         script = '<script type="module" src="/desk.mjs"></script>'
@@ -156,7 +145,7 @@ def handler_for(raw_report, client=None, is_demo=False):
             path = urlsplit(self.path).path
             if path == "/":
                 self.send(200, page, "text/html; charset=utf-8")
-            elif path in ("/desk.css", "/desk.mjs", "/core.mjs"):
+            elif path in ("/desk.css", "/desk.mjs", "/core.mjs", "/report_ui.mjs"):
                 data = (ROOT / "desk" / path[1:]).read_bytes()
                 self.send(
                     200, data, "text/css" if path.endswith("css") else "text/javascript"
@@ -202,7 +191,13 @@ def handler_for(raw_report, client=None, is_demo=False):
                     raise ValueError("Expected a report object")
                 report = prepare_report(data.get("report"))
                 if path == "/api/prepare":
-                    self.send(200, {"report": report})
+                    self.send(
+                        200,
+                        {
+                            "report": public_report(report),
+                            "source": canonical_source(report),
+                        },
+                    )
                 elif not ai_lock.acquire(blocking=False):
                     self.send(
                         409,
@@ -239,10 +234,18 @@ def main():
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--demo", action="store_true")
     source.add_argument(
-        "--report", type=Path, help="Version 1 inventory-review JSON output"
+        "--report",
+        type=Path,
+        help="Version 1 inventory-review or Prowler Security Delta JSON output",
     )
     parser.add_argument("--port", type=int, default=8770)
-    parser.add_argument(
+    output = parser.add_mutually_exclusive_group()
+    output.add_argument(
+        "--export-ai-evidence",
+        type=Path,
+        help="Write the Promptfoo-compatible evidence packet",
+    )
+    output.add_argument(
         "--export",
         type=Path,
         help="Write a standalone HTML preview instead of starting a server",
@@ -256,7 +259,19 @@ def main():
             if args.demo
             else json.loads(args.report.read_text(encoding="utf-8-sig"))
         )
-        prepare_report(raw)
+        prepared = prepare_report(raw)
+        if args.export_ai_evidence:
+            if (
+                args.report
+                and args.export_ai_evidence.resolve() == args.report.resolve()
+            ):
+                raise ValueError("Evidence output cannot overwrite the input report")
+            args.export_ai_evidence.parent.mkdir(parents=True, exist_ok=True)
+            args.export_ai_evidence.write_text(
+                json.dumps(ai_evidence(prepared), indent=2) + "\n", encoding="utf-8"
+            )
+            print(f"AI evidence saved: {args.export_ai_evidence}")
+            return
         if args.export:
             if args.report and args.export.resolve() == args.report.resolve():
                 raise ValueError("The preview cannot overwrite its input report")

@@ -153,7 +153,7 @@ def observation(record):
     return text
 
 
-def prepare_report(raw):
+def prepare_report(raw, collection_evidence=None):
     """Build a stable cited review document from a validated inventory report."""
     if (
         not isinstance(raw, dict)
@@ -193,6 +193,8 @@ def prepare_report(raw):
         "after_at": after_at,
         "devices": records,
     }
+    if collection_evidence is not None:
+        normalized["collection_evidence"] = collection_evidence
     digest = hashlib.sha256(
         json.dumps(normalized, sort_keys=True).encode()
     ).hexdigest()[:16]

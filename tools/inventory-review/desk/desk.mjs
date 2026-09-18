@@ -1,4 +1,5 @@
 import { filterRecords, buildDraft, validSavedDraft, draftMarkdown } from './core.mjs';
+import { presentation, recordName, recordSubtitle, recordMetadata } from './report_ui.mjs';
 
 const $ = (id) => document.getElementById(id);
 const initial = JSON.parse($('initialData').textContent);
@@ -12,6 +13,7 @@ let page = 0;
 let draftBuffer = null;
 let aiBusy = false;
 let savedDrafts = [];
+const workspaces = new Map((initial.workspaces || [initial]).map((item) => [item.report.report_type || 'inventory', item]));
 
 function notice(text, error = false) {
   $('notice').textContent = text;
@@ -37,9 +39,10 @@ function activeDrafts() {
 function showView(name) {
   $('reviewView').hidden = name !== 'review';
   $('draftsView').hidden = name !== 'drafts';
-  for (const [id, value] of [['reviewTab', 'review'], ['draftsTab', 'drafts']]) {
-    $(id).classList.toggle('active', name === value);
-    if (name === value) $(id).setAttribute('aria-current', 'page');
+  const active = name === 'drafts' ? 'drafts' : report.report_type || 'inventory';
+  for (const [id, value] of [['reviewTab', 'inventory'], ['securityTab', 'security'], ['draftsTab', 'drafts']]) {
+    $(id).classList.toggle('active', active === value);
+    if (active === value) $(id).setAttribute('aria-current', 'page');
     else $(id).removeAttribute('aria-current');
   }
   if (name === 'drafts') renderDrafts();
@@ -63,18 +66,57 @@ function citation(id) {
   return button;
 }
 
+function activateWorkspace(type) {
+  if (aiBusy) { notice('Wait for the current AI summary before switching reports.'); return; }
+  const workspace = workspaces.get(type);
+  if (!workspace) { notice(`Import a ${type === 'security' ? 'Prowler Security Delta' : 'NetAlertX inventory-review'} JSON report to open this view.`); if (!offline) $('reportFile').click(); return; }
+  $('notice').hidden = true;
+  report = workspace.report; source = workspace.source; selected = report.records[0]?.evidence_id; page = 0;
+  $('search').value = '';
+  $('demoLabel').hidden = !workspace.demo;
+  renderOverview(); renderQueue(); showView('review');
+}
+
+function renderCollection() {
+  const panel = $('collectionEvidence');
+  panel.replaceChildren();
+  const evidence = report.collection_evidence;
+  panel.hidden = !evidence;
+  if (!evidence) return;
+  panel.append(el('h3', 'Collection evidence'), el('p', 'Collector-recorded API coverage. Reads were consistent across each collection window; an atomic snapshot is not guaranteed. Integrity hashes do not independently attest to the source or scan freshness.'));
+  for (const [side, label] of [['before', 'Baseline'], ['after', 'Current']]) {
+    const item = evidence[side];
+    const line = el('div', '', 'collection-row');
+    line.append(el('strong', label), el('span', item.source_endpoint),
+      el('span', `${item.row_count} rows · ${item.started_at} → ${item.completed_at}`),
+      el('span', 'Consistent API reads; scan freshness unverified.'));
+    panel.append(line);
+  }
+}
+
 function renderOverview() {
+  const view = presentation(report);
+  $('viewTitle').textContent = view.title;
+  $('queueHeading').textContent = view.heading;
   $('scopeLine').textContent = report.scope;
-  $('overviewSentence').textContent = `${report.needs_review} of ${report.records.length} device records need review. ${report.owner_gaps} have missing ownership evidence.`;
+  $('overviewSentence').textContent = view.sentence;
+  $('searchLabel').textContent = `Search ${view.plural}`;
+  $('filterLabel').textContent = `Filter ${view.plural}`;
+  $('search').placeholder = view.search;
+  $('queueEmpty').textContent = `No ${view.plural} match. Try another search or filter.`;
+  $('filter').replaceChildren(...view.filters.map(([value, label]) => {
+    const option = el('option', label); option.value = value; return option;
+  }));
   $('beforeDate').textContent = dateLabel(report.before_at);
   $('afterDate').textContent = dateLabel(report.after_at);
   $('beforeDate').title = report.before_at;
   $('afterDate').title = report.after_at;
-  $('beforeCount').textContent = `${report.baseline_devices} devices observed`;
-  $('afterCount').textContent = `${report.current_devices} devices observed`;
-  $('reportLabel').textContent = `Report ${report.report_id} · Times shown in UTC`;
-  const metrics = [['attention', report.needs_review, 'Need review'], ['new_device', report.counts.new_device || 0, 'New devices'],
-    ['changed', report.counts.changed || 0, 'Changed'], ['not_observed', report.counts.not_observed || 0, 'Not observed'], ['ownership', report.owner_gaps, 'Owner gaps']];
+  $('beforeCount').textContent = `${view.before} ${view.plural} observed`;
+  $('afterCount').textContent = `${view.after} ${view.plural} observed`;
+  $('reportLabel').textContent = `${view.type === 'security' ? 'Prowler' : 'NetAlertX'} report ${report.report_id} · UTC`;
+  $('coverageNote').textContent = view.coverage;
+  renderCollection();
+  const metrics = view.metrics;
   $('metrics').replaceChildren(...metrics.map(([filter, count, label]) => {
     const button = el('button', '', 'metric');
     button.dataset.filter = filter;
@@ -109,16 +151,17 @@ function renderQueue() {
   $('deviceList').replaceChildren(...rows.slice(page * pageSize, (page + 1) * pageSize).map((record) => {
     const row = el('li');
     const button = el('button', '', `device-row ${record.change}${selected === record.evidence_id ? ' selected' : ''}`);
-    const name = record.device.devName || record.device.devMac;
+    const name = recordName(record);
     button.setAttribute('aria-label', `Review ${name}`);
     button.setAttribute('aria-pressed', String(selected === record.evidence_id));
     button.dataset.evidenceId = record.evidence_id;
-    const icon = el('span', { new_device: '+', changed: '↔', not_observed: '?', unchanged: '✓', incomplete_comparison: '…' }[record.change], 'device-icon');
+    const icon = el('span', { new_device: '+', changed: '↔', not_observed: '?', unchanged: '✓', incomplete_comparison: '…', regression: '↗', new_failure: '!', newly_confirmed_failure: '!', persistent_failure: '!', verified_fix: '✓', observed_pass: '✓', inconclusive: '?' }[record.change], 'device-icon');
     icon.setAttribute('aria-hidden', 'true');
     const content = el('span', '', 'device-row-content');
-    content.append(el('strong', name), el('small', `${record.device.devLastIP || 'IP not exported'} / ${record.device.devSite || 'Site not exported'}`));
+    content.append(el('strong', name), el('small', recordSubtitle(record)));
     const footer = el('span', '', 'row-footer');
     footer.append(el('span', record.label, `status ${record.change}`));
+    if (record.severity) footer.append(el('span', record.severity, 'severity'));
     if (['unassigned', 'not_exported'].includes(record.owner_status)) footer.append(el('span', 'Owner needs review', 'owner-warning'));
     content.append(footer);
     button.append(icon, content);
@@ -139,8 +182,8 @@ function renderDetail(record) {
   $('detailStatus').className = `status ${record.change}`;
   $('detailStatus').textContent = record.label;
   $('evidenceId').textContent = record.evidence_id;
-  $('deviceName').textContent = record.device.devName || record.device.devMac;
-  $('deviceMeta').textContent = `${record.device.devMac} / ${record.device.devSite || 'Site not exported'}`;
+  $('deviceName').textContent = recordName(record);
+  $('deviceMeta').textContent = recordMetadata(record);
   $('deviceObservation').textContent = record.observation;
   $('recommendation').textContent = record.recommendation;
   $('evidenceRows').replaceChildren(...record.cells.map((cell) => {
@@ -258,10 +301,14 @@ function renderAI(result) {
     }
     panel.append(list);
   }
+  const save = el('button', 'Download AI draft', 'button subtle');
+  save.addEventListener('click', () => download(`ai-summary-${report.report_id}.json`, JSON.stringify(result.summary, null, 2), 'application/json'));
+  panel.append(save);
   panel.hidden = false;
 }
 
-$('reviewTab').addEventListener('click', () => showView('review'));
+$('reviewTab').addEventListener('click', () => activateWorkspace('inventory'));
+$('securityTab').addEventListener('click', () => activateWorkspace('security'));
 $('draftsTab').addEventListener('click', () => showView('drafts'));
 $('backToReview').addEventListener('click', () => showView('review'));
 $('search').addEventListener('input', () => { page = 0; renderQueue(); });
@@ -291,26 +338,26 @@ $('downloadEdited').addEventListener('click', () => {
   download(`review-${draft.evidence_id}.md`, draftMarkdown(draft));
 });
 $('downloadAll').addEventListener('click', () => download(`review-drafts-${report.report_id}.md`, activeDrafts().map(draftMarkdown).join('\n---\n\n')));
-$('downloadReport').addEventListener('click', () => download(`inventory-report-${report.report_id}.json`, JSON.stringify(source, null, 2), 'application/json'));
+$('downloadReport').addEventListener('click', () => download(`${report.report_type || 'inventory'}-report-${report.report_id}.json`, JSON.stringify(source, null, 2), 'application/json'));
 $('importButton').addEventListener('click', () => {
-  if (offline) notice('Run the local review desk to import a different inventory-review JSON report.');
+  if (offline) notice('Run the local review desk to import an inventory-review or Security Delta JSON report.');
   else if (aiBusy) notice('Wait for the current AI summary before importing another report.');
   else $('reportFile').click();
 });
 $('reportFile').addEventListener('change', async () => {
   const file = $('reportFile').files[0];
   if (!file) return;
-  $('importButton').disabled = true;
+  $('importButton').disabled = true; $('aiButton').disabled = true;
   try {
     if (file.size > 8 * 1024 * 1024) throw new Error('Choose a report smaller than 8 MB.');
     const incoming = JSON.parse(await file.text());
     const result = await request('/api/prepare', { report: incoming });
-    report = result.report; source = incoming; selected = report.records[0].evidence_id; page = 0;
-    $('demoLabel').hidden = true; $('search').value = ''; $('filter').value = 'attention';
-    renderOverview(); renderQueue(); showView('review');
+    const type = result.report.report_type || 'inventory';
+    workspaces.set(type, { report: result.report, source: result.source || incoming, demo: false });
+    activateWorkspace(type);
     notice(`Imported ${file.name}. Drafts and evidence are scoped to this report.`);
   } catch (error) { notice(`Report was not imported: ${error.message}`, true); }
-  finally { $('reportFile').value = ''; $('importButton').disabled = false; }
+  finally { $('reportFile').value = ''; $('importButton').disabled = false; $('aiButton').disabled = false; }
 });
 $('aiButton').addEventListener('click', () => { $('aiDialog').showModal(); if (!aiBusy) refreshModels(); });
 $('closeAI').addEventListener('click', () => $('aiDialog').close());
@@ -335,4 +382,4 @@ try {
   }
 } catch { notice('Browser storage is unavailable. Drafts can still be downloaded.'); }
 $('demoLabel').hidden = !initial.demo;
-renderOverview(); renderQueue();
+renderOverview(); renderQueue(); showView('review');

@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "scope": "Fictional lab \u2014 local HTTP fixture, not a live scan",
+  "before_at": "2026-09-18T20:33:25.114599Z",
+  "after_at": "2026-09-18T20:33:25.193670Z",
+  "baseline_devices": 3,
+  "current_devices": 3,
+  "counts": {
+    "changed": 2,
+    "unchanged": 1
+  },
+  "ownership": {
+    "assigned": 2,
+    "unassigned": 1
+  },
+  "devices": [
+    {
+      "change": "changed",
+      "device": {
+        "devName": "Lab device 1",
+        "devOwner": "Lab IT",
+        "devLastIP": "192.0.2.100",
+        "devType": "Laptop",
+        "devVlan": "20",
+        "devSite": "Fictional lab",
+        "devLocation": "Bench",
+        "devMac": "02:00:00:00:00:01"
+      },
+      "owner_status": "assigned",
+      "changes": [
+        {
+          "field": "devLastIP",
+          "before": "192.0.2.1",
+          "after": "192.0.2.100"
+        }
+      ],
+      "uncompared_fields": []
+    },
+    {
+      "change": "changed",
+      "device": {
+        "devName": "Lab device 2",
+        "devOwner": "",
+        "devLastIP": "192.0.2.2",
+        "devType": "Laptop",
+        "devVlan": "20",
+        "devSite": "Fictional lab",
+        "devLocation": "Bench",
+        "devMac": "02:00:00:00:00:02"
+      },
+      "owner_status": "unassigned",
+      "changes": [
+        {
+          "field": "devOwner",
+          "before": "Lab IT",
+          "after": ""
+        }
+      ],
+      "uncompared_fields": []
+    },
+    {
+      "change": "unchanged",
+      "device": {
+        "devName": "Lab device 3",
+        "devOwner": "Lab IT",
+        "devLastIP": "192.0.2.3",
+        "devType": "Laptop",
+        "devVlan": "20",
+        "devSite": "Fictional lab",
+        "devLocation": "Bench",
+        "devMac": "02:00:00:00:00:03"
+      },
+      "owner_status": "assigned",
+      "changes": [],
+      "uncompared_fields": []
+    }
+  ],
+  "collection_evidence": {
+    "schema_version": 1,
+    "before": {
+      "schema_version": 1,
+      "source_endpoint": "http://127.0.0.1:50418",
+      "scope": "Fictional lab \u2014 local HTTP fixture, not a live scan",
+      "started_at": "2026-09-18T20:33:25.105246Z",
+      "completed_at": "2026-09-18T20:33:25.114599Z",
+      "row_count": 3,
+      "data_sha256": "ea1ab39c418bd7a8f45a2a6134dbad1a44a74f9a81847a52a436c1fac0cd2841",
+      "coverage": {
+        "status": "consistent_api_traversals",
+        "method": "two_paginated_passes_and_full_export",
+        "page_size": 2,
+        "passes": [
+          {
+            "page_rows": [
+              2,
+              1,
+              0
+            ],
+            "rows": 3,
+            "data_sha256": "ea1ab39c418bd7a8f45a2a6134dbad1a44a74f9a81847a52a436c1fac0cd2841"
+          },
+          {
+            "page_rows": [
+              2,
+              1,
+              0
+            ],
+            "rows": 3,
+            "data_sha256": "ea1ab39c418bd7a8f45a2a6134dbad1a44a74f9a81847a52a436c1fac0cd2841"
+          }
+        ],
+        "export_rows": 3,
+        "export_sha256": "ea1ab39c418bd7a8f45a2a6134dbad1a44a74f9a81847a52a436c1fac0cd2841",
+        "totals": [
+          {
+            "devices": 2,
+            "archived": 1
+          },
+          {
+            "devices": 2,
+            "archived": 1
+          },
+          {
+            "devices": 2,
+            "archived": 1
+          }
+        ],
+        "atomicity": "not_guaranteed",
+        "scan_freshness": "unverified"
+      },
+      "evidence_sha256": "285df882d86807d7838906361264145e8053159bbfe5539138471d3aacb4d342"
+    },
+    "after": {
+      "schema_version": 1,
+      "source_endpoint": "http://127.0.0.1:50418",
+      "scope": "Fictional lab \u2014 local HTTP fixture, not a live scan",
+      "started_at": "2026-09-18T20:33:25.184254Z",
+      "completed_at": "2026-09-18T20:33:25.193670Z",
+      "row_count": 3,
+      "data_sha256": "7eb483333357d965671fb729f1c51f0f0c24a12f4e98a84a14d2f14ee2a11b7b",
+      "coverage": {
+        "status": "consistent_api_traversals",
+        "method": "two_paginated_passes_and_full_export",
+        "page_size": 2,
+        "passes": [
+          {
+            "page_rows": [
+              2,
+              1,
+              0
+            ],
+            "rows": 3,
+            "data_sha256": "7eb483333357d965671fb729f1c51f0f0c24a12f4e98a84a14d2f14ee2a11b7b"
+          },
+          {
+            "page_rows": [
+              2,
+              1,
+              0
+            ],
+            "rows": 3,
+            "data_sha256": "7eb483333357d965671fb729f1c51f0f0c24a12f4e98a84a14d2f14ee2a11b7b"
+          }
+        ],
+        "export_rows": 3,
+        "export_sha256": "7eb483333357d965671fb729f1c51f0f0c24a12f4e98a84a14d2f14ee2a11b7b",
+        "totals": [
+          {
+            "devices": 2,
+            "archived": 1
+          },
+          {
+            "devices": 2,
+            "archived": 1
+          },
+          {
+            "devices": 2,
+            "archived": 1
+          }
+        ],
+        "atomicity": "not_guaranteed",
+        "scan_freshness": "unverified"
+      },
+      "evidence_sha256": "41bcfa5814631f011807a1345e15b046f6918c59c9582a0a0c5b191019c12a60"
+    },
+    "report_sha256": "e958f1bdbf0cc322c7e11d763a58815f90304aba7a5c259f2c1f986ccf096e68"
+  }
+}

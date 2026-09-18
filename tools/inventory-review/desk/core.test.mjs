@@ -52,3 +52,26 @@ test('download preserves user edits as a draft document', () => {
 test('blank titles cannot be restored or saved', () => {
   assert.equal(validSavedDraft({ ...buildDraft(report, record), title: '   ' }), false);
 });
+
+test('security draft includes exact finding identity and unresolved statuses', () => {
+  const finding = { ...record, device: undefined, finding: { RESOURCE_UID: 'storage-demo' },
+    entity_name: 'storage-demo', entity_key: 'aws / demo-account / demo-check / storage-demo / us-west-2',
+    detail_meta: 'aws / demo-account / us-west-2 / demo-check', severity: 'high',
+    previous_status: 'FAIL', current_status: null };
+  const draft = buildDraft({ ...report, report_type: 'security' }, finding);
+  assert.ok(draft.title.includes('security finding: storage-demo'));
+  assert.ok(draft.body.includes('Status: FAIL → not observed'));
+  assert.ok(draft.body.includes('demo-account'));
+  assert.ok(draft.body.includes('Verification: unverified'));
+});
+
+test('security filters retain missing evidence and new regressions', () => {
+  const records = [
+    { ...record, change: 'regression', device: undefined, finding: { RESOURCE_UID: 'storage-a' } },
+    { ...record, change: 'inconclusive', device: undefined, finding: { RESOURCE_UID: 'storage-b' } },
+  ];
+  const security = { ...report, report_type: 'security', records };
+  assert.equal(filterRecords(security, 'regressed', 'storage').length, 1);
+  assert.equal(filterRecords(security, 'uncertain', 'storage-b').length, 1);
+  assert.equal(filterRecords(security, 'verified_fix', '').length, 0);
+});
