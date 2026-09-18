@@ -1,0 +1,51 @@
+{
+  "format": "json",
+  "data": [
+    {
+      "devMac": "02:00:00:00:00:01",
+      "devName": "Office switch",
+      "devOwner": "IT",
+      "devLastIP": "192.0.2.11",
+      "devType": "Switch",
+      "devVlan": "10",
+      "devSite": "Demo office",
+      "devLocation": "Rack"
+    },
+    {
+      "devMac": "02:00:00:00:00:02",
+      "devName": "Meeting room display",
+      "devOwner": "",
+      "devLastIP": "192.0.2.20",
+      "devType": "Display",
+      "devVlan": "20",
+      "devSite": "Demo office",
+      "devLocation": "Room A"
+    },
+    {
+      "devMac": "02:00:00:00:00:04",
+      "devName": "Unassigned lab device",
+      "devOwner": "",
+      "devLastIP": "192.0.2.40",
+      "devType": "Unknown",
+      "devVlan": "30",
+      "devSite": "Demo office",
+      "devLocation": "Lab"
+    },
+    {
+      "devMac": "02:00:00:00:00:05",
+      "devName": "Remote office printer",
+      "devLastIP": "198.51.100.25",
+      "devSite": "Demo branch"
+    }
+  ],
+  "columns": [
+    "devMac",
+    "devName",
+    "devOwner",
+    "devLastIP",
+    "devType",
+    "devVlan",
+    "devSite",
+    "devLocation"
+  ]
+}

@@ -1,3 +1,5 @@
+> **JD Miller fork:** [Inventory review](tools/inventory-review/README.md) — a runnable experimental extension with fictional examples and focused tests. Upstream project documentation follows.
+
 [![Docker Size](https://img.shields.io/docker/image-size/jokobsk/netalertx?label=Size&logo=Docker&color=0aa8d2&logoColor=fff&style=for-the-badge)](https://hub.docker.com/r/jokobsk/netalertx)
 [![Docker Pulls](https://img.shields.io/docker/pulls/jokobsk/netalertx?label=Pulls&logo=docker&color=0aa8d2&logoColor=fff&style=for-the-badge)](https://hub.docker.com/r/jokobsk/netalertx)
 [![GitHub Release](https://img.shields.io/github/v/release/netalertx/NetAlertX?color=0aa8d2&logoColor=fff&logo=GitHub&style=for-the-badge&label=latest)](https://github.com/netalertx/NetAlertX/releases)
